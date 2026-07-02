@@ -1,0 +1,19 @@
+{
+  "project": "AI Investment Research Agent",
+  "author": "Ardhendu Shekhar",
+  "llm_used_to_build": "Claude (Anthropic)",
+  "llm_used_in_product": "OpenAI GPT-4o via LangChain.js + LangGraph.js",
+  "session_date": "2025-06-27",
+  "transcript": [
+    {"turn": 1, "role": "user", "content": "I need to build an AI Investment Research Agent using Next.js, LangChain.js, and LangGraph.js. What architecture should I use?"},
+    {"turn": 1, "role": "assistant", "content": "Use LangGraph to build a stateful agentic loop. The graph has two nodes: 'agent' (GPT-4o with tools bound) and 'tools' (ToolNode that executes tool calls). Conditional edge: if last message has tool_calls → go to tools → back to agent. If no tool_calls → END and return the report. Tools: get_financials (Yahoo Finance, no key), search_web (SerpAPI), get_news (SerpAPI news). Frontend: Next.js App Router with a React client component. API: POST /api/research → calls runResearchAgent(company) → returns report + log."},
+    {"turn": 2, "role": "user", "content": "Why LangGraph instead of a plain while loop like in the Python version?"},
+    {"turn": 2, "content": "LangGraph gives you: (1) explicit state management via Annotation.Root — the messages array is typed and reducers handle concatenation cleanly; (2) visual graph structure that's easy to extend — add a 'supervisor' node or 'memory' node without rewriting everything; (3) built-in ToolNode that handles parallel tool calls, error catching, and message formatting correctly; (4) it's the production stack InsideIIM specified. A plain while loop works but LangGraph is the professional pattern for stateful agents.", "role": "assistant"},
+    {"turn": 3, "role": "user", "content": "How does the frontend show the INVEST/WATCH/PASS verdict?"},
+    {"turn": 3, "role": "assistant", "content": "The API returns the full report string. On the frontend, parseVerdict() runs a regex against the report: /VERDICT:\\s*INVEST/i etc. Then a color-coded banner renders at the top of the result card — green for INVEST, amber for WATCH, red for PASS. The report itself is parsed from markdown to HTML via a lightweight parseMarkdown() function (no library needed). The Agent Log tab shows every tool_call and tool_result entry from the LangGraph execution trace — this is the bonus LLM transcript requirement."},
+    {"turn": 4, "role": "user", "content": "What are the key trade-offs in this architecture?"},
+    {"turn": 4, "role": "assistant", "content": "1. Yahoo Finance (no key) vs paid financial API: Yahoo is free but rate-limited and occasionally returns empty data. A Bloomberg/Polygon.io key would be more reliable — left out to minimize setup friction. 2. SerpAPI optional: without it, web search and news return stub messages — the agent still works with just financials. 3. Markdown parsing is custom (regex) not a library — keeps bundle size small, trade-off is it handles ~80% of markdown cases. 4. No streaming: the API waits for the full report before returning — streaming would improve UX. 5. No persistence: reports aren't saved to a database — added to in-memory React state only. With more time: Vercel Postgres to store report history."},
+    {"turn": 5, "role": "user", "content": "What would you improve with more time?"},
+    {"turn": 5, "role": "assistant", "content": "1. Streaming responses (OpenAI stream + ReadableStream API) for real-time report generation. 2. Deploy to Vercel with environment variables — the agent is Vercel-ready right now. 3. Add a LangGraph 'supervisor' node that critiques the first draft and sends it back for revision if the verdict confidence is low. 4. Persist reports to Vercel Postgres + show history dashboard. 5. Add sentiment scoring on news headlines using a lightweight model. 6. Support private companies via Crunchbase API. 7. PDF export via @react-pdf/renderer."}
+  ]
+}
